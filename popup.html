@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Prompts Manager</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Custom Prompts</h1>
+        
+        <div class="input-group">
+            <input type="text" id="promptName" placeholder="Name (e.g., Explain Like I'm 5)">
+            <textarea id="promptText" rows="3" placeholder="Prompt (e.g., Explain this simply to a 5 year old: )"></textarea>
+            <button id="addPrompt">Add Action</button>
+        </div>
+
+        <ul id="promptList">
+            <!-- Items will be injected here via popup.js -->
+        </ul>
+        
+        <div class="footer">
+            <small>Right-click text to use these!</small>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore node modules (if you add them later)
+node_modules/
+npm-debug.log
+
+# Ignore build artifacts
+*.zip
+*.crx
+*.pem
+
+# Ignore personal config or keys
+.env
+local-config.js
