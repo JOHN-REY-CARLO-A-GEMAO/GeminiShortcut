@@ -1,8 +1,15 @@
 // Default prompts configuration
 const defaultPrompts = {
-  "summarize": { name: "Summarize this (TL;DR)", text: "Provide a concise 3-bullet point summary of this: " },
-  "debug": { name: "Debug / Explain Code", text: "Act as an expert developer. Explain how this code works and find any bugs: " },
-  "rewrite": { name: "Make this Professional", text: "Rewrite this text to be professional, clear, and polite: " }
+  "summarize": { name: "Summarize (3 bullets)", text: "Provide a concise 3-bullet summary of this: " },
+  "explain": { name: "Explain Simply (ELI5)", text: "Explain this in simple terms for a student: " },
+  "notes": { name: "Make Study Notes", text: "Turn this into clean study notes with headings and bullet points: " },
+  "quiz": { name: "Quiz Me", text: "Create 5 quiz questions (with answers) based on this: " },
+  "rewrite": { name: "Rewrite Clearly", text: "Rewrite this to be clear and well-structured for studying: " }
+};
+
+const defaultSettings = {
+  floatingEnabled: true,
+  floatingActionId: "summarize"
 };
 
 // Function to rebuild context menus
@@ -32,16 +39,30 @@ function updateContextMenus() {
 // On Install: Initialize defaults if needed, then build menus
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Gemini Shortcut: Extension background service worker active.");
-  
-  chrome.storage.sync.get(['prompts'], (result) => {
+
+  chrome.storage.sync.get(['prompts', 'settings'], (result) => {
+    const updates = {};
+
     if (!result.prompts) {
-      chrome.storage.sync.set({ prompts: defaultPrompts }, () => {
+      updates.prompts = defaultPrompts;
+    }
+    if (!result.settings) {
+      updates.settings = defaultSettings;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      chrome.storage.sync.set(updates, () => {
         updateContextMenus();
       });
     } else {
       updateContextMenus();
     }
   });
+});
+
+// Rebuild menus on browser startup in case the service worker was unloaded
+chrome.runtime.onStartup.addListener(() => {
+  updateContextMenus();
 });
 
 // Listen for storage changes (e.g. from Popup) to update menus live

@@ -8,12 +8,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>Custom Prompts</h1>
+        <h1>Student Prompts</h1>
         
         <div class="input-group">
-            <input type="text" id="promptName" placeholder="Name (e.g., Explain Like I'm 5)">
-            <textarea id="promptText" rows="3" placeholder="Prompt (e.g., Explain this simply to a 5 year old: )"></textarea>
+            <input type="text" id="promptName" placeholder="Name (e.g., Explain Simply)">
+            <textarea id="promptText" rows="3" placeholder="Prompt (e.g., Explain this for a high-school student: )"></textarea>
             <button id="addPrompt">Add Action</button>
+        </div>
+
+        <div class="settings-group">
+            <h2>Quick Settings</h2>
+            <label class="setting-row">
+                <input type="checkbox" id="floatingEnabled">
+                <span>Show floating button on text selection</span>
+            </label>
+            <label class="setting-row">
+                <span>Floating button action</span>
+                <select id="floatingAction"></select>
+            </label>
+            <button id="resetDefaults" class="secondary">Reset Student Defaults</button>
         </div>
 
         <ul id="promptList">
