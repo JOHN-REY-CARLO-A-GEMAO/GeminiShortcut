@@ -1,38 +1,76 @@
-# 🚀 Quick Gemini Pro - Extension Publishing Guide
+# Gemini Shortcut
 
-You are almost ready to publish your extension to the Chrome Web Store! This guide covers the final assets you need to create.
+> Right-click any text → summarize, explain, quiz, or rewrite it with Gemini — in one click or one keystroke.
 
-## 1. Create Icons 🎨
-Chrome requires 4 icons in PNG format.
-**Action:** Create a square logo (e.g., a "G" or a brain/spark icon) and resize it to these sizes:
-- `icons/icon16.png` (16x16 px)
-- `icons/icon32.png` (32x32 px)
-- `icons/icon48.png` (48x48 px)
-- `icons/icon128.png` (128x128 px)
+![Extension icon](icons/icon128.png)
 
-**Free Tool:** Use [Canva](https://www.canva.com/) or [Figma](https://www.figma.com/) to create a 128x128 logo, then use an online resizer.
+## Features
 
-## 2. Store Assets 📸
-To make your listing look professional, you need:
-- **Screenshot:** Take a screenshot of the right-click menu in action on a website.
-- **Promotional Tile:** Create a `1280x800` pixel image. This is the main banner users see in the store. Include your extension name and a catchy tagline like "AI Power in One Click".
+### 🎯 Right-Click Actions
+Highlight any text on any webpage, right-click, and pick a Gemini action:
+- **Summarize** — 3-bullet summary
+- **Explain Simply** — ELI5-style explanation
+- **Make Study Notes** — headings + bullet points
+- **Quiz Me** — 5 questions with answers
+- **Rewrite Clearly** — clear, well-structured text
 
-## 3. Packing for Upload 📦
-When you have your icons ready:
-1. Select all files in this folder (`manifest.json`, `background.js`, `content.js`, `popup.html`, `popup.js`, `popup.css`, `icons/`).
-2. Right-click -> **Send to -> Compressed (zipped) folder**.
-3. Name it `gemini-pro-v2.zip`.
+### ⌨️ Keyboard Shortcuts
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Shift+1` | Summarize |
+| `Ctrl+Shift+2` | Explain Simply |
+| `Ctrl+Shift+3` | Make Study Notes |
+| `Ctrl+Shift+4` | Quiz Me |
+| `Ctrl+Shift+5` | Rewrite Clearly |
 
-## 4. Upload to Developer Dashboard ☁️
-1. Go to the [Chrome Developer Dashboard](https://chrome.google.com/webstore/dev/dashboard).
-2. Click **"New Item"**.
-3. Upload your `gemini-pro-v2.zip`.
-4. Fill in the "Store Listing" details.
+_(Mac: replace `Ctrl` with `Command`)_
 
-### Feature Highlights to Mention:
-- **Instant AI Actions:** Summarize, Debug, Rewrite with one click.
-- **Custom Prompts:** Create your own AI commands (e.g., "Translate to Spanish", "Explain simply").
-- **Privacy Focused:** Your data only goes to Google when you explicitly ask.
+If you're already on [gemini.google.com](https://gemini.google.com), the shortcut injects the prompt directly. Otherwise it opens a new tab.
 
----
-**Good luck!** 🚀
+### 🛟 Floating Button
+On text selection, a floating **G** button appears near your cursor. Tap it for a one-click Gemini query — no right-click needed.
+
+Toggle it on/off and choose which action it triggers in Settings.
+
+### ⚙️ Custom Prompts
+The popup lets you add, edit, and remove prompts. Defaults are student-focused but completely customizable.
+
+## Installation
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/JOHN-REY-CARLO-A-GEMAO/GeminiShortcut.git
+   ```
+2. Open **Chrome** → `chrome://extensions`
+3. Enable **Developer Mode** (top right)
+4. Click **Load unpacked** → select the repo folder
+5. Pin the extension for easy access
+
+## Project Structure
+
+```
+GeminiShortcut/
+├── manifest.json        # Extension config (MV3)
+├── constants.js         # Shared defaults + storage helpers
+├── background.js        # Service worker (context menus, shortcuts, badge)
+├── content.js           # Injected into all pages (floating button + Gemini site)
+├── popup.html/js/css    # Extension settings UI
+├── icons/              # Extension icons (16, 32, 48, 128 px)
+└── README.md
+```
+
+## Configuration
+
+Open the extension popup to:
+- Enable/disable the floating button
+- Choose which prompt the floating button triggers
+- Add your own custom prompts
+- Reset to default prompts
+
+## Privacy
+
+Your selected text is sent to Google's Gemini only when you explicitly invoke an action. No data is collected or stored anywhere else.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or pull requests.

@@ -1,6 +1,6 @@
 // ============================================================
-// GeminiShortcut – shared defaults (single source of truth)
-// Inlined into each consumer at build time.
+// GeminiShortcut – shared defaults + storage helpers
+// Inlined at build time.
 // ============================================================
 
 const DEFAULT_PROMPTS = {
@@ -16,11 +16,35 @@ const DEFAULT_SETTINGS = {
   floatingActionId: "summarize"
 };
 
+const GEMINI_URLS = [
+  "https://gemini.google.com/app?q={q}&autosubmit=true",
+  "https://gemini.google.com/app?q={q}",
+  "https://gemini.google.com/?q={q}"
+];
+
+function buildGeminiUrl(prompt) {
+  for (const template of GEMINI_URLS) {
+    const url = template.replace("{q}", prompt);
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === "gemini.google.com") return url;
+    } catch { /* skip */ }
+  }
+  return null;
+}
+
+function storageGet(keys) {
+  return new Promise(resolve => chrome.storage.sync.get(keys, resolve));
+}
+function storageSet(items) {
+  return new Promise(resolve => chrome.storage.sync.set(items, resolve));
+}
+
 // ============================================================
-// Popup UI – runs in the extension popup context
+// Popup UI
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const list            = document.getElementById('promptList');
   const nameInput       = document.getElementById('promptName');
   const textInput       = document.getElementById('promptText');
@@ -29,20 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const floatingAction  = document.getElementById('floatingAction');
   const resetDefaults   = document.getElementById('resetDefaults');
 
-  // ── Load stored prompts & settings, seed defaults on first run ────────────
-  chrome.storage.sync.get(['prompts', 'settings'], (result) => {
-    const prompts  = result.prompts  || { ...DEFAULT_PROMPTS };
-    const settings = result.settings || { ...DEFAULT_SETTINGS };
+  // ── Load ───────────────────────────────────────────────────────────────────
+  const { prompts, settings } = await storageGet(['prompts', 'settings']);
+  const activePrompts  = prompts  || { ...DEFAULT_PROMPTS };
+  const activeSettings = settings || { ...DEFAULT_SETTINGS };
 
-    if (!result.prompts)  chrome.storage.sync.set({ prompts });
-    if (!result.settings) chrome.storage.sync.set({ settings });
+  if (!prompts)  await storageSet({ prompts:  { ...DEFAULT_PROMPTS } });
+  if (!settings) await storageSet({ settings: { ...DEFAULT_SETTINGS } });
 
-    renderList(prompts);
-    renderSettings(prompts, settings);
-  });
+  renderList(activePrompts);
+  renderSettings(activePrompts, activeSettings);
 
   // ── Add new prompt ─────────────────────────────────────────────────────────
-  addButton.addEventListener('click', () => {
+  addButton.addEventListener('click', async () => {
     const name = nameInput.value.trim();
     const text = textInput.value.trim();
 
@@ -51,57 +74,51 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    chrome.storage.sync.get(['prompts', 'settings'], (result) => {
-      const prompts  = result.prompts  || { ...DEFAULT_PROMPTS };
-      const settings = result.settings || { ...DEFAULT_SETTINGS };
+    const { prompts: currentPrompts, settings: currentSettings } = await storageGet(['prompts', 'settings']);
+    const current = currentPrompts || { ...DEFAULT_PROMPTS };
 
-      // Warn on duplicate name
-      const duplicateByName = Object.values(prompts).some(p => p.name === name);
-      if (duplicateByName && !confirm(`A prompt named "${name}" already exists. Add another?`)) return;
+    const duplicateByName = Object.values(current).some(p => p.name === name);
+    if (duplicateByName && !confirm(`A prompt named "${name}" already exists. Add another?`)) return;
 
-      const id = makeId(name, prompts);
-      prompts[id] = { name, text };
+    const id = makeId(name, current);
+    current[id] = { name, text };
 
-      chrome.storage.sync.set({ prompts }, () => {
-        nameInput.value = '';
-        textInput.value = '';
-        renderList(prompts);
-        renderSettings(prompts, settings);
-      });
-    });
+    await storageSet({ prompts: current });
+
+    nameInput.value = '';
+    textInput.value = '';
+    renderList(current);
+    renderSettings(current, currentSettings || DEFAULT_SETTINGS);
   });
 
-  // ── Toggle floating button ────────────────────────────────────────────────
-  floatingEnabled.addEventListener('change', () => {
-    chrome.storage.sync.get(['settings'], (result) => {
-      const settings = { ...DEFAULT_SETTINGS, ...result.settings };
-      settings.floatingEnabled = floatingEnabled.checked;
-      chrome.storage.sync.set({ settings });
-    });
+  // ── Toggle floating button ─────────────────────────────────────────────────
+  floatingEnabled.addEventListener('change', async () => {
+    const { settings: s } = await storageGet(['settings']);
+    const settings = { ...DEFAULT_SETTINGS, ...s };
+    settings.floatingEnabled = floatingEnabled.checked;
+    await storageSet({ settings });
   });
 
-  // ── Change floating button action ──────────────────────────────────────────
-  floatingAction.addEventListener('change', () => {
-    chrome.storage.sync.get(['settings'], (result) => {
-      const settings = { ...DEFAULT_SETTINGS, ...result.settings };
-      settings.floatingActionId = floatingAction.value;
-      chrome.storage.sync.set({ settings });
-    });
+  // ── Change floating action ─────────────────────────────────────────────────
+  floatingAction.addEventListener('change', async () => {
+    const { settings: s } = await storageGet(['settings']);
+    const settings = { ...DEFAULT_SETTINGS, ...s };
+    settings.floatingActionId = floatingAction.value;
+    await storageSet({ settings });
   });
 
-  // ── Reset to defaults ──────────────────────────────────────────────────────
-  resetDefaults.addEventListener('click', () => {
+  // ── Reset to defaults ─────────────────────────────────────────────────────
+  resetDefaults.addEventListener('click', async () => {
     if (!confirm("Reset prompts and settings to defaults?")) return;
-    chrome.storage.sync.set({
+    await storageSet({
       prompts:  { ...DEFAULT_PROMPTS },
       settings: { ...DEFAULT_SETTINGS }
-    }, () => {
-      renderList(DEFAULT_PROMPTS);
-      renderSettings(DEFAULT_PROMPTS, DEFAULT_SETTINGS);
     });
+    renderList(DEFAULT_PROMPTS);
+    renderSettings(DEFAULT_PROMPTS, DEFAULT_SETTINGS);
   });
 
-  // ── Render prompt list ────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   function renderList(prompts) {
     list.innerHTML = '';
 
@@ -113,9 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const [id, data] of Object.entries(prompts)) {
       const li   = document.createElement('li');
       const info = Object.assign(document.createElement('div'), { className: 'prompt-info' });
-
-      Object.assign(document.createElement('span'), { className: 'prompt-name',   textContent: data.name });
-      Object.assign(document.createElement('span'), { className: 'prompt-detail', textContent: data.text });
 
       info.appendChild(Object.assign(document.createElement('span'), { className: 'prompt-name',   textContent: data.name }));
       info.appendChild(Object.assign(document.createElement('span'), { className: 'prompt-detail', textContent: data.text }));
@@ -131,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ── Render settings controls ───────────────────────────────────────────────
   function renderSettings(prompts, settings) {
     floatingEnabled.checked = !!settings.floatingEnabled;
     floatingAction.innerHTML = '';
@@ -141,15 +154,13 @@ document.addEventListener('DOMContentLoaded', () => {
       floatingAction.appendChild(Object.assign(document.createElement('option'), { value: id, textContent: data.name }));
     }
 
-    // Fallback if stored actionId no longer exists
     if (!prompts[settings.floatingActionId] && entries.length > 0) {
       settings.floatingActionId = entries[0][0];
-      chrome.storage.sync.set({ settings });
+      storageSet({ settings });
     }
     floatingAction.value = settings.floatingActionId || '';
   }
 
-  // ── Build a URL-safe unique id from a name ─────────────────────────────────
   function makeId(name, existing) {
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'prompt';
     if (!existing[base]) return base;
@@ -158,21 +169,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return id;
   }
 
-  // ── Delete a prompt ────────────────────────────────────────────────────────
-  function removePrompt(id) {
-    chrome.storage.sync.get(['prompts', 'settings'], (result) => {
-      const prompts  = result.prompts  || {};
-      const settings = { ...DEFAULT_SETTINGS, ...result.settings };
-      delete prompts[id];
+  async function removePrompt(id) {
+    const { prompts: p, settings: s } = await storageGet(['prompts', 'settings']);
+    const prompts  = p || {};
+    const settings = { ...DEFAULT_SETTINGS, ...s };
+    delete prompts[id];
 
-      if (settings.floatingActionId === id) {
-        settings.floatingActionId = Object.keys(prompts)[0] || DEFAULT_SETTINGS.floatingActionId;
-      }
+    if (settings.floatingActionId === id) {
+      settings.floatingActionId = Object.keys(prompts)[0] || DEFAULT_SETTINGS.floatingActionId;
+    }
 
-      chrome.storage.sync.set({ prompts, settings }, () => {
-        renderList(prompts);
-        renderSettings(prompts, settings);
-      });
-    });
+    await storageSet({ prompts, settings });
+    renderList(prompts);
+    renderSettings(prompts, settings);
   }
 });

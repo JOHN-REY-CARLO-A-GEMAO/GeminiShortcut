@@ -1,6 +1,6 @@
 // ============================================================
-// GeminiShortcut – shared defaults (single source of truth)
-// Inlined into each consumer at build time.
+// GeminiShortcut – shared defaults + storage helpers
+// Inlined at build time.
 // ============================================================
 
 const DEFAULT_PROMPTS = {
@@ -16,21 +16,49 @@ const DEFAULT_SETTINGS = {
   floatingActionId: "summarize"
 };
 
+// ── Gemini URL strategy ──────────────────────────────────────────────────────
+const GEMINI_URLS = [
+  "https://gemini.google.com/app?q={q}&autosubmit=true",
+  "https://gemini.google.com/app?q={q}",
+  "https://gemini.google.com/?q={q}"
+];
+
+function buildGeminiUrl(prompt) {
+  for (let i = 0; i < GEMINI_URLS.length; i++) {
+    const url = GEMINI_URLS[i].replace("{q}", prompt);
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === "gemini.google.com") return url;
+    } catch {
+      // malformed URL, skip
+    }
+  }
+  return null;
+}
+
+// ── Promisified storage helpers ───────────────────────────────────────────────
+function storageGet(keys) {
+  return new Promise(resolve => chrome.storage.sync.get(keys, resolve));
+}
+function storageSet(items) {
+  return new Promise(resolve => chrome.storage.sync.set(items, resolve));
+}
+function storageRemove(keys) {
+  return new Promise(resolve => chrome.storage.sync.remove(keys, resolve));
+}
+
 // ============================================================
 // Background Service Worker
 // ============================================================
 
-/** Promisify chrome.contextMenus.removeAll for clean async/await */
 function removeAllMenus() {
   return new Promise(resolve => chrome.contextMenus.removeAll(resolve));
 }
 
-/** Rebuild context menus from current stored prompts */
 async function updateContextMenus() {
-  const { prompts } = await chrome.storage.sync.get(['prompts']);
+  const { prompts } = await storageGet(['prompts']);
   const activePrompts = prompts || DEFAULT_PROMPTS;
 
-  // Wait for removeAll to finish before creating new menus (fixes async race)
   await removeAllMenus();
 
   chrome.contextMenus.create({
@@ -47,49 +75,70 @@ async function updateContextMenus() {
       contexts: ["selection"]
     });
   }
+
+  // Update badge with prompt count
+  const count = Object.keys(activePrompts).length;
+  chrome.action.setBadgeText({ text: String(count) });
+  chrome.action.setBadgeBackgroundColor({ color: "#4285f4" });
 }
 
-// ── Extension installed / updated ──────────────────────────────────────────
+// ── Extension installed / updated ────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Gemini Shortcut: Extension installed/updated.");
-
-  chrome.storage.sync.get(['prompts', 'settings'], (result) => {
-    const updates = {};
-
-    if (!result.prompts)  updates.prompts  = DEFAULT_PROMPTS;
-    if (!result.settings) updates.settings = DEFAULT_SETTINGS;
-
-    if (Object.keys(updates).length > 0) {
-      chrome.storage.sync.set(updates, updateContextMenus);
-    } else {
-      updateContextMenus();
-    }
-  });
+  updateContextMenus();
 });
 
-// ── Browser startup (service worker may have been unloaded) ────────────────
+// ── Browser startup ──────────────────────────────────────────────────────────
 chrome.runtime.onStartup.addListener(() => {
   updateContextMenus();
 });
 
-// ── Keep menus in sync when popup or content script changes storage ─────────
+// ── Keep menus in sync when popup/content script changes storage ─────────────
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'sync' && changes.prompts) {
     updateContextMenus();
   }
 });
 
-// ── Handle context menu clicks ──────────────────────────────────────────────
-chrome.contextMenus.onClicked.addListener((info) => {
-  chrome.storage.sync.get(['prompts'], (result) => {
-    const prompts = result.prompts || DEFAULT_PROMPTS;
-    const action  = prompts[info.menuItemId];
-    if (!action) return;
+// ── Keyboard shortcut handler ────────────────────────────────────────────────
+chrome.commands.onCommand.addListener(async (commandId) => {
+  // commandId matches the key in the "commands" manifest block (e.g. "summarize")
+  const { prompts } = await storageGet(['prompts']);
+  const action = (prompts || DEFAULT_PROMPTS)[commandId];
+  if (!action) return;
 
-    const query = encodeURIComponent(action.text + info.selectionText);
-    const url   = `https://gemini.google.com/app?q=${query}&autosubmit=true`;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+
+  // If the user is already on Gemini, inject the prompt directly
+  if (tab.url && tab.url.includes("gemini.google.com")) {
+    const query = encodeURIComponent(action.text);
+    chrome.tabs.sendMessage(tab.id, { type: "INJECT_PROMPT", prompt: query });
+    return;
+  }
+
+  // Otherwise open a new Gemini tab
+  const url = buildGeminiUrl(encodeURIComponent(action.text));
+  if (url) chrome.tabs.create({ url });
+});
+
+// ── Context menu click handler ────────────────────────────────────────────────
+chrome.contextMenus.onClicked.addListener(async (info) => {
+  if (info.menuItemId === "geminiMaster") return;
+
+  const { prompts } = await storageGet(['prompts']);
+  const action = (prompts || DEFAULT_PROMPTS)[info.menuItemId];
+  if (!action) return;
+
+  const selectedText = encodeURIComponent(info.selectionText);
+  const fullPrompt   = encodeURIComponent(action.text + info.selectionText);
+  const url          = buildGeminiUrl(fullPrompt);
+
+  if (url) {
     chrome.tabs.create({ url });
-  });
+  } else {
+    console.error("GeminiShortcut: All Gemini URL strategies failed.");
+  }
 });
 
 console.log("Gemini Shortcut: Background service worker ready.");

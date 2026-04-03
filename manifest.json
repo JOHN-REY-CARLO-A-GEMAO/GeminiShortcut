@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "Quick Gemini Pro",
-  "version": "2.0",
-  "description": "Right-click any text to summarize, explain, make study notes, or quiz yourself with Gemini.",
+  "name": "Gemini Shortcut",
+  "version": "2.1",
+  "description": "Right-click any text to summarize, explain, make study notes, or quiz yourself with Gemini. Keyboard shortcuts included.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["storage", "contextMenus"],
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "activeTab"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -22,5 +26,27 @@
       "matches": ["https://*/*", "http://*/*"],
       "js": ["content.js"]
     }
-  ]
+  ],
+  "commands": {
+    "summarize": {
+      "suggested_key": { "default": "Ctrl+Shift+1", "mac": "Command+Shift+1" },
+      "description": "Run Summarize (1st prompt)"
+    },
+    "explain": {
+      "suggested_key": { "default": "Ctrl+Shift+2", "mac": "Command+Shift+2" },
+      "description": "Run Explain Simply (2nd prompt)"
+    },
+    "notes": {
+      "suggested_key": { "default": "Ctrl+Shift+3", "mac": "Command+Shift+3" },
+      "description": "Run Make Study Notes (3rd prompt)"
+    },
+    "quiz": {
+      "suggested_key": { "default": "Ctrl+Shift+4", "mac": "Command+Shift+4" },
+      "description": "Run Quiz Me (4th prompt)"
+    },
+    "rewrite": {
+      "suggested_key": { "default": "Ctrl+Shift+5", "mac": "Command+Shift+5" },
+      "description": "Run Rewrite Clearly (5th prompt)"
+    }
+  }
 }
