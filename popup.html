@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Prompts Manager</title>
+    <title>Gemini Shortcut</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
     <div class="container">
-        <h1>Student Prompts</h1>
-        
-        <div class="input-group">
+        <h1>Gemini Shortcut</h1>
+
+        <!-- Add new prompt -->
+        <div class="card">
             <input type="text" id="promptName" placeholder="Name (e.g., Explain Simply)">
-            <textarea id="promptText" rows="3" placeholder="Prompt (e.g., Explain this for a high-school student: )"></textarea>
-            <button id="addPrompt">Add Action</button>
+            <textarea id="promptText" rows="3" placeholder="Prompt (e.g., Explain this for a high-school student:)"></textarea>
+            <button id="addPrompt" class="btn-primary">Add Action</button>
         </div>
 
-        <div class="settings-group">
+        <!-- Settings -->
+        <div class="card">
             <h2>Quick Settings</h2>
             <label class="setting-row">
                 <input type="checkbox" id="floatingEnabled">
@@ -26,15 +28,14 @@
                 <span>Floating button action</span>
                 <select id="floatingAction"></select>
             </label>
-            <button id="resetDefaults" class="secondary">Reset Student Defaults</button>
+            <button id="resetDefaults" class="btn-secondary">Reset to Defaults</button>
         </div>
 
-        <ul id="promptList">
-            <!-- Items will be injected here via popup.js -->
-        </ul>
-        
+        <!-- Prompt list -->
+        <ul id="promptList"></ul>
+
         <div class="footer">
-            <small>Right-click text to use these!</small>
+            <small>Right-click text or use Ctrl+Shift+1–5</small>
         </div>
     </div>
     <script src="popup.js"></script>
