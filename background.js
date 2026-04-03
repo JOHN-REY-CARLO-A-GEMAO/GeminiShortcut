@@ -103,6 +103,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 // ── Keyboard shortcut handler ────────────────────────────────────────────────
 // chrome.commands supports a maximum of 4 shortcuts.
 // Currently registered: summarize, explain, notes, quiz.
+chrome.commands.onCommand.addListener(async (commandId) => {
   const { prompts } = await storageGet(['prompts']);
   const action = (prompts || DEFAULT_PROMPTS)[commandId];
   if (!action) return;
