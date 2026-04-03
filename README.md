@@ -21,7 +21,6 @@ Highlight any text on any webpage, right-click, and pick a Gemini action:
 | `Ctrl+Shift+2` | Explain Simply |
 | `Ctrl+Shift+3` | Make Study Notes |
 | `Ctrl+Shift+4` | Quiz Me |
-| `Ctrl+Shift+5` | Rewrite Clearly |
 
 _(Mac: replace `Ctrl` with `Command`)_
 

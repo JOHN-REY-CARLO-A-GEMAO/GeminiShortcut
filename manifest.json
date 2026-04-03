@@ -43,10 +43,6 @@
     "quiz": {
       "suggested_key": { "default": "Ctrl+Shift+4", "mac": "Command+Shift+4" },
       "description": "Run Quiz Me (4th prompt)"
-    },
-    "rewrite": {
-      "suggested_key": { "default": "Ctrl+Shift+5", "mac": "Command+Shift+5" },
-      "description": "Run Rewrite Clearly (5th prompt)"
     }
   }
 }
